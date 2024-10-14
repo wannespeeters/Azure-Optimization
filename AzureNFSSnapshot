@@ -1,3 +1,7 @@
+########################################################
+# This Powershell/automation script is used to automate the creation of NFS file share snapshots for storage accounts.
+# The script will create hourly snapshots for the current day and will clean up the snapshots of the day before while maintaining a daily snapshot for 90 days.
+
 # Ensures you do not inherit an AzContext in your runbook
 Disable-AzContextAutosave -Scope Process
 
