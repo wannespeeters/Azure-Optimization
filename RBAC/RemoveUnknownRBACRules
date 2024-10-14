@@ -1,0 +1,19 @@
+# Ensures you do not inherit an AzContext in your runbook
+Disable-AzContextAutosave -Scope Process
+
+# Connect to Azure with system-assigned managed identity
+$AzureContext = (Connect-AzAccount -Identity).context
+
+$Subscriptions = Get-AzSubscription
+
+#Get all the unknown RBAC assignments on each subscription and remove these
+foreach ($sub in $Subscriptions){
+	Select-AzSubscription -SubscriptionName $sub.Name
+   
+    $OBJTYPE = "Unknown"
+    $unknownRBACS = Get-AzRoleAssignment | Where-Object {$_.ObjectType.Equals($OBJTYPE)}
+
+    foreach ($unknown in $unknownRBACS) { 
+        Remove-AzRoleAssignment -ObjectId $unknown.ObjectId -RoleDefinitionName $unknown.RoleDefinitionName -Scope $unknown.Scope   
+    }
+}
