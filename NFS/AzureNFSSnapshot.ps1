@@ -1,53 +1,50 @@
+# Log into Azure with the managed identity
 # Ensures you do not inherit an AzContext in your runbook
 Disable-AzContextAutosave -Scope Process
 
 # Connect to Azure with system-assigned managed identity
-$AzureContext = (Connect-AzAccount -Identity).context
+(Connect-AzAccount -Identity).context
 $Subscriptions = Get-AzSubscription
 
-# Set date variables
-$yesterday = (Get-Date).AddDays(-1)
-$min = $yesterday.AddHours(-0.5)
-$max = $yesterday.AddHours(0.5)
+$Yesterday = (Get-Date).AddDays(-1)
+$Min = $yesterday.AddHours(-0.5)
+$Max = $yesterday.AddHours(0.5)
 
-$oldSnapshotsTime = (Get-Date).AddDays(-90)
+$OldSnapshotTime = (Get-Date).AddDays(-90)
 
 # Loop over all subscriptions
-foreach ($sub in $Subscriptions){
-	Select-AzSubscription -SubscriptionName $sub.Name
-    # Get all storage accounts with the tag "FileShareBackup" set to "True"
-    $NFSstorageAccounts = Get-AzResource -Tag @{ FileShareBackup = "True" } | where {$_.ResourceType -eq "Microsoft.Storage/storageAccounts"}
+foreach ($Sub in $Subscriptions) {
+    Select-AzSubscription -SubscriptionName $Sub.Name
+    $NFSstorageAccounts = Get-AzResource -Tag @{ FileShareBackup = "True" } | Where-Object {$_.ResourceType -eq "Microsoft.Storage/storageAccounts"}
 
     # Loop over all storage accounts where file share snapshot needs to be taken
-    foreach ($straccount in $NFSstorageAccounts) {
-        $resourceGroup = $straccount.ResourceGroupName
-        $storageAccount = $straccount.Name
-        # Only select the shares with type "NFS"
-        $shares = Get-AzRmStorageShare -ResourceGroupName $resourceGroup -StorageAccountName $storageAccount | where {$_.EnabledProtocols -eq "NFS"}
+    foreach ($Straccount in $NFSstorageAccounts) {
+        $ResourceGroup = $Straccount.ResourceGroupName
+        $StorageAccount = $Straccount.Name
+        $Shares = Get-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount | Where-Object {$_.EnabledProtocols -eq "NFS"}
 
-        foreach ($share in $shares) {
-            $snapshots = Get-AzRmStorageShare -ResourceGroupName $resourceGroup -StorageAccountName $storageAccount -Filter "startswith(name, $($share.name))" -IncludeSnapshot | where {$_.SnapshotTime -le $max -and $_.SnapshotTime -ge $min -and $_.SnapshotTime -ne $null}
+        foreach ($Share in $Shares) {
+            $Snapshots = Get-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Filter "startswith(name, $($Share.name))" -IncludeSnapshot | Where-Object {$_.SnapshotTime -le $Max -and $_.SnapshotTime -ge $Min -and $_.SnapshotTime -ne $null}
 
-            # Do not remove daily snapshot at 14:00 in order to keep a daily snapshot
-            if($yesterday.Hour -ne 14) {
-                #Remove snapshots from day before except from 14:00
-                foreach ($snapshot in $snapshots) {
-                Remove-AzRmStorageShare -ResourceGroupName $resourceGroup -StorageAccountName $storageAccount -Name $share.Name -SnapshotTime $snapshot.SnapshotTime -Force
-                $snapshot
+            # Do not remove daily snapshot at 14
+            if($Yesterday.Hour -ne 14) {
+                #Remove snapshots from Yesterday
+                foreach ($Snapshot in $Snapshots) {
+                    Write-Output "Removed hourly snapshot $($Snapshot.SnapshotTime) in $StorageAccount share $($Share.Name)"
+                    Remove-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Name $Share.Name -SnapshotTime $Snapshot.SnapshotTime -Force
                 }
             }
 
             # Remove all snapshots older then 90 days
-            $oldSnapshots = Get-AzRmStorageShare -ResourceGroupName $resourceGroup -StorageAccountName $storageAccount -Filter "startswith(name, $($share.name))" -IncludeSnapshot | where {$_.SnapshotTime -le $oldSnapshotsTime -and $_.SnapshotTime -ne $null}
+            $OldSnapshots = Get-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Filter "startswith(name, $($Share.name))" -IncludeSnapshot | Where-Object {$_.SnapshotTime -le $OldSnapshotTime -and $_.SnapshotTime -ne $null}
 
-            foreach ($oldSnapshot in $oldSnapshots) {
-                Remove-AzRmStorageShare -ResourceGroupName $resourceGroup -StorageAccountName $storageAccount -Name $share.Name -SnapshotTime $oldSnapshot.SnapshotTime -Force
-                $oldSnapshot
+            foreach ($oldSnapshot in $OldSnapshots) {
+                Remove-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Name $Share.Name -SnapshotTime $oldSnapshot.SnapshotTime -Force
+                Write-Output "Removed snapshot $($Snapshot.SnapshotTime) in $($StorageAccount.name) share $($Share.Name)"
             }
 
-            # Create an hourly snapshot of the given share
-            Write-Host "Creating an hourly snapshot of share"$share.Name
-            New-AzRmStorageShare -ResourceGroupName $resourceGroup -StorageAccountName $storageAccount -Name $share.Name -Snapshot
+            Write-Output "Creating an hourly snapshot for $StorageAccount share $($Share.Name)"
+            New-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Name $Share.Name -Snapshot
         }
     }
 }

@@ -2,18 +2,19 @@
 Disable-AzContextAutosave -Scope Process
 
 # Connect to Azure with system-assigned managed identity
-$AzureContext = (Connect-AzAccount -Identity).context
+(Connect-AzAccount -Identity).context
 
 $Subscriptions = Get-AzSubscription
 
 #Get all the unknown RBAC assignments on each subscription and remove these
-foreach ($sub in $Subscriptions){
-	Select-AzSubscription -SubscriptionName $sub.Name
+foreach ($Sub in $Subscriptions){
+	Select-AzSubscription -SubscriptionName $Sub.Name
    
     $OBJTYPE = "Unknown"
-    $unknownRBACS = Get-AzRoleAssignment | Where-Object {$_.ObjectType.Equals($OBJTYPE)}
+    $unknownAssignments = Get-AzRoleAssignment | Where-Object {$_.ObjectType.Equals($OBJTYPE)}
 
-    foreach ($unknown in $unknownRBACS) { 
-        Remove-AzRoleAssignment -ObjectId $unknown.ObjectId -RoleDefinitionName $unknown.RoleDefinitionName -Scope $unknown.Scope   
+    foreach ($assignment in $unknownAssignments) { 
+        Remove-AzRoleAssignment -ObjectId $assignment.ObjectId -RoleDefinitionName $assignment.RoleDefinitionName -Scope $assignment.Scope
+        Write-Output "Removed role assignment on scope $($assignment.Scope)" 
     }
 }
