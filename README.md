@@ -4,5 +4,5 @@
 - It ain't much but it is honest work ;)
 
 # Current scripts
-- NFS/AzureNFSSnapshot
-- RBAC/RemoveUnknownRBACRules
+- NFS/Create-AzureNFSSnapshot.ps1
+- RBAC/Remove-UnknownRbacAssignments.ps1
