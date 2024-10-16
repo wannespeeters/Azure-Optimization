@@ -38,8 +38,8 @@ foreach ($Sub in $Subscriptions) {
             # Remove all snapshots older then 90 days
             $OldSnapshots = Get-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Filter "startswith(name, $($Share.name))" -IncludeSnapshot | Where-Object {$_.SnapshotTime -le $OldSnapshotTime -and $_.SnapshotTime -ne $null}
 
-            foreach ($oldSnapshot in $OldSnapshots) {
-                Remove-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Name $Share.Name -SnapshotTime $oldSnapshot.SnapshotTime -Force
+            foreach ($OldSnapshot in $OldSnapshots) {
+                Remove-AzRmStorageShare -ResourceGroupName $ResourceGroup -storageAccountName $StorageAccount -Name $Share.Name -SnapshotTime $OldSnapshot.SnapshotTime -Force
                 Write-Output "Removed snapshot $($Snapshot.SnapshotTime) in $($StorageAccount.name) share $($Share.Name)"
             }
 
