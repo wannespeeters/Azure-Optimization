@@ -6,3 +6,4 @@
 # Current scripts
 - NFS/Create-AzureNFSSnapshot.ps1
 - RBAC/Remove-UnknownRbacAssignments.ps1
+- Secret/Monitor-AppRegSecrets.ps1
