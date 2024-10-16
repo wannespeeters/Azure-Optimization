@@ -3,10 +3,9 @@ Disable-AzContextAutosave -Scope Process
 # Connect to MG graph with the system assigned managed identity of the account
 Connect-MgGraph -Identity -NoWelcome
 
-# Get the currect date and the days until expiration
+# Set variables
 $Now = Get-Date
 $DaysUntilExpiration = 30
-
 $WebhookUrl = $YOURWEBHOOKVAR
 
 # Get all app registrations and loop through all secrets and certificates, create an omnitracker ticket per secret/certificate
