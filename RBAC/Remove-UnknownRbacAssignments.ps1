@@ -11,10 +11,10 @@ foreach ($Sub in $Subscriptions){
 	Select-AzSubscription -SubscriptionName $Sub.Name
    
     $OBJTYPE = "Unknown"
-    $unknownAssignments = Get-AzRoleAssignment | Where-Object {$_.ObjectType.Equals($OBJTYPE)}
+    $UnknownAssignments = Get-AzRoleAssignment | Where-Object {$_.ObjectType.Equals($OBJTYPE)}
 
-    foreach ($assignment in $unknownAssignments) { 
-        Remove-AzRoleAssignment -ObjectId $assignment.ObjectId -RoleDefinitionName $assignment.RoleDefinitionName -Scope $assignment.Scope
-        Write-Output "Removed role assignment on scope $($assignment.Scope)" 
+    foreach ($Assignment in $UnknownAssignments) { 
+        Remove-AzRoleAssignment -ObjectId $Assignment.ObjectId -RoleDefinitionName $Assignment.RoleDefinitionName -Scope $Assignment.Scope
+        Write-Output "Removed role assignment on scope $($Assignment.Scope)" 
     }
 }
