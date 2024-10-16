@@ -8,8 +8,7 @@ $Subscriptions = Get-AzSubscription
 
 #Get all the unknown RBAC assignments on each subscription and remove these
 foreach ($Sub in $Subscriptions){
-	Select-AzSubscription -SubscriptionName $Sub.Name
-   
+    Select-AzSubscription -SubscriptionName $Sub.Name
     $OBJTYPE = "Unknown"
     $UnknownAssignments = Get-AzRoleAssignment | Where-Object {$_.ObjectType.Equals($OBJTYPE)}
 
